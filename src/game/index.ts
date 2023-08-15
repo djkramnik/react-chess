@@ -1,4 +1,4 @@
-type SquareState =
+export type SquareState =
   | '0'
   | 'p'
   | 'n'
@@ -20,13 +20,17 @@ type OneOrZero =
 type Rank = | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8'
 type File = | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h'
 
-type Square = `${Rank}${File}`
-type Move = `${Square}-${Square}`
+export type Square = `${File}${Rank}`
+export type Move = `${Square}-${Square}`
+export type InvalidMove = {
+  [S in keyof Record<Square, null>]: `${S}-${S}`
+}
+export type ValidMove = Exclude<Move, InvalidMove>
 
 type Result = 1 | 0 | -1
 
-interface GameState {
-  board: SquareState[]
+export interface GameState<T extends SquareState = SquareState, S extends Square = Square> {
+  board: Record<S, T>
   castling: `${OneOrZero}${OneOrZero}${OneOrZero}${OneOrZero}` // wk, wq, bk, bq
   enpassant: number | null
   fiftyMove: number
@@ -35,34 +39,34 @@ interface GameState {
   result: Result | null
 }
 
-interface ChessGame {
+export interface ChessGameManager<M extends Move = Move> {
   state: GameState
-  next: (move: Move) => GameState | null
+  next: (move: M) => GameState | null
   endGame: (r: Result) => GameState
   reset: () => GameState
 }
 
-interface Rules {
-  next: (move: Move) => GameState | null
+interface Rules<M extends Move> {
+  next: (move: M) => GameState | null
   validate?: (state: GameState) => boolean
 }  
 
-interface GetChessGame {
-  rules: Rules
+interface GetChessGame<M extends Move> {
+  rules: Rules<M>
   initial: GameState
 }
 
-export const getChessGame = ({
+export const getChessGame = <M extends Move = ValidMove>({
   rules,
   initial,
-}: GetChessGame): ChessGame | null => {
+}: GetChessGame<M>): ChessGameManager<M> | null => {
   if (rules.validate?.(initial) === false) {
     return null
   }
 
   let state: GameState = {
     ...initial,
-    board: initial.board.slice(0),
+    board: {...initial.board},
     history: initial.history.slice(0),
   }
 
@@ -73,7 +77,7 @@ export const getChessGame = ({
     reset,
   }
 
-  function next(move: Move): GameState | null {
+  function next(move: M): GameState | null {
     const nextState = rules.next(move)
     if (nextState !== null) {
       state = nextState
@@ -90,7 +94,7 @@ export const getChessGame = ({
   function reset() {
     state = {
       ...initial,
-      board: initial.board.slice(0),
+      board: {...initial.board},
       history: initial.history.slice(0),
     }
     return state
