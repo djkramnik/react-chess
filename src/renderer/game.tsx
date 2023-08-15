@@ -54,6 +54,7 @@ export const ChessGame = ({
   
   return (
     <div className="chessgame">
+      <div className="chessgame-overlay" aria-hidden />
       <ChessBoard<SquareState>
         position={boardState.board}
         pieceSet={pieceSet}
@@ -64,3 +65,5 @@ export const ChessGame = ({
     </div>
   )
 }
+
+// default implementation goes here
